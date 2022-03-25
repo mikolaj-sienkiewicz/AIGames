@@ -1,6 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from gym import spaces 
+import pygame
+from render_controller import draw_map, draw_grid
+import time 
+
 class GridWorld(object):
     def __init__(self, m, n, magicSquares):
         self.grid = np.zeros(m*n)
@@ -95,25 +99,31 @@ class GridWorld(object):
         self.grid[self.agentPosition] = 1
         return self.grid #self.agentPosition
 
-    def render(self):
+    def render(self, surface):
         print('------------------------------------------')
         grid_2d = np.resize(self.grid, (self.n,self.m))
-        for row in grid_2d:
-            for col in row:
-                if col == 0:
-                    print('-', end='\t')
-                elif col == 1:
-                    print('X', end='\t')
-                elif col == 2:
-                    print('Ain', end='\t')
-                elif col == 3:
-                    print('Aout', end='\t')
-                elif col == 4:
-                    print('Bin', end='\t')
-                elif col == 5:
-                    print('Bout', end='\t')
-            print('\n')
-        print('------------------------------------------')
+        #world_map=read_map(observation)
+        draw_map(surface, grid_2d)
+        draw_grid(surface) 
+        pygame.display.flip()
+        time.sleep(1)
+        # for row in grid_2d:
+        #     for col in row:
+        #         if col == 0:
+        #             print('-', end='\t')
+        #         elif col == 1:
+        #             print('X', end='\t')
+        #         elif col == 2:
+        #             print('Ain', end='\t')
+        #         elif col == 3:
+        #             print('Aout', end='\t')
+        #         elif col == 4:
+        #             print('Bin', end='\t')
+        #         elif col == 5:
+        #             print('Bout', end='\t')
+        #     print('\n')
+        # print('------------------------------------------')
+
 
     def actionSpaceSample(self):
         return np.random.choice(self.possibleActions)
