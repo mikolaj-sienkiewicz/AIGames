@@ -5,8 +5,10 @@ import pygame
 from render_controller import draw_map, draw_grid
 import time 
 
+
 class GridWorld(object):
     def __init__(self, m, n, magicSquares):
+
         self.grid = np.zeros(m*n)
         self.m = m
         self.n = n
@@ -21,16 +23,41 @@ class GridWorld(object):
         self.possibleActions = [0, 1,2,3]
         # dict with magic squares and resulting squares
         #self.addMagicSquares(magicSquares)
-        self.agentPosition = 0
+        self.agentPosition = np.random.randint(self.m*self.n)
+        self.foodPosition = self.agentPosition
+        while self.foodPosition == self.agentPosition:
+            self.foodPosition=np.random.randint(self.m*self.n)
+        self.pointsToCollect=2
 
-    def isTerminalState(self, state):
-        x = np.zeros(self.m*self.n)
-        x[-1]=1
+    def isTerminalState(self):
+        # x = np.zeros(self.m*self.n)
+        # x[-1]=1
+        if (self.pointsToCollect==1 and self.agentPosition==self.foodPosition):
+            return True
+        else:
+            return False
+        #return self.agentPosition==self.foodPosition and self.pointsToCollect==1
         # if(state[-1]==1):
         #     print(x, state)
         #     print("Terminal: ",(state == x).all())
-        return (state == x).all() #in self.stateSpacePlus and state not in self.stateSpace
+        #return (state == x).all() #in self.stateSpacePlus and state not in self.stateSpace
 
+    def isFoodState(self):
+        if self.agentPosition==self.foodPosition:
+            
+            self.grid[self.foodPosition]=1
+
+            #Tak długo jak nie stoisz na graczu
+            while self.grid[self.foodPosition]!=1:
+                self.foodPosition=np.random.randint(0,self.m*self.n)
+
+
+
+            self.grid[self.foodPosition]=2
+            self.pointsToCollect-=1
+            return True
+        else:
+            return False
     # def addMagicSquares(self, magicSquares):
     #     self.magicSquares = magicSquares
     #     i = 2
@@ -59,7 +86,7 @@ class GridWorld(object):
     def offGridMove(self, newAgentPos, oldAgentPos):
         #return False
         # # if we move into a row not in the grid
-        if 0 > newAgentPos or newAgentPos > self.n*self.m:#self.stateSpacePlus:
+        if 0 > newAgentPos or newAgentPos >= self.n*self.m:#self.stateSpacePlus:
             return True
         #if we're trying to wrap around to next row
         elif oldAgentPos % self.m == 0 and newAgentPos  % self.m == self.m - 1:
@@ -70,33 +97,33 @@ class GridWorld(object):
             return False
 
     def step(self, action):
-        #agentX, agentY = self.getAgentRowAndColumn()
-        #old_state = [1 if self.agentPosition==i else 0 for i in range(self.observation_size)]
-        #11111111111111111111
+
         old_index=self.agentPosition
         index=self.agentPosition + self.actionDict[action]
-        #print(self.actionDict[action],index,old_index,self.offGridMove(index, old_index))
-        #print(resultingState)
-        # resultingState = self.agentPosition + self.actionDict[action] 
-        # if resultingState in self.magicSquares.keys():
-        #     resultingState = self.magicSquares[resultingState]
 
-        #00000000000000000000000
-
-        reward = -1 if not self.isTerminalState(self.grid) else 0
+        reward = -1 if not self.isTerminalState() else 0
+        reward += -10 if self.offGridMove(index,old_index) else 0
+        reward += 100 if self.isFoodState() else 0
 
         if not self.offGridMove(index, old_index):
             self.agentPosition=index
-            self.grid = [1 if index==i else 0 for i in range(self.observation_size)]
+            self.grid = np.zeros(self.observation_size)#[1 if index==i else 0 for i in range(self.observation_size)]
+            self.grid[self.agentPosition]=1
+            self.grid[self.foodPosition]=2
 
         return self.grid, reward, \
-                self.isTerminalState(self.grid), None
+                self.isTerminalState(), None
 
     def reset(self):
-        self.agentPosition = 0
+        self.pointsToCollect = 3
+        self.agentPosition = np.random.randint(self.m*self.n)
+        self.foodPosition = self.agentPosition
+        while self.foodPosition == self.agentPosition:
+            self.foodPosition=np.random.randint(self.m*self.n)
         self.grid = np.zeros((self.m*self.n))
         #self.addMagicSquares(self.magicSquares)
         self.grid[self.agentPosition] = 1
+        self.grid[self.foodPosition] = 2
         return self.grid #self.agentPosition
 
     def render(self, surface):

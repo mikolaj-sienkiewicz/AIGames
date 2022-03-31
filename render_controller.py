@@ -9,7 +9,7 @@ def get_tile_color(tile_contents):
         tile_color = constants.DARKGREY
     if tile_contents == 0:
         tile_color = constants.GREEN
-    if tile_contents == "p":
+    if tile_contents == 2:
         tile_color = constants.BLACK
     if tile_contents == 1:
         tile_color = constants.RED
