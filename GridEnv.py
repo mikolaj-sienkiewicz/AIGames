@@ -6,16 +6,18 @@ import pygame
 from render_controller import draw_map, draw_grid
 import time 
 import copy
+from render_controller import initialize_game
 
 class GridWorld(object):
     metadata = {'render.modes': ['human']}
-    POINTS_TO_COLLECT=1
+    POINTS_TO_COLLECT=3
 
     def __init__(self, m, n):
         super().__init__()
-        self.time_cap=1000
+        self.time_cap=3000
         self.current_time=0
-
+        self.new_food_prob=0.005
+        self.game_already_initialized=False
         #self.grid = np.zeros(m*n)
         self.m = m
         #self.observation_space=spaces.Discrete(m*n)
@@ -50,57 +52,26 @@ class GridWorld(object):
         #return (state == x).all() #in self.stateSpacePlus and state not in self.stateSpace
 
     def isFoodState(self):
-        if self.agentPosition==self.foodPosition:
-            
-            self.img[self.foodPosition]=(255,0,0)
-
+        if (self.img[self.agentPosition]==[0,255,0]).all():
+            #self.img = np.zeros((self.m,self.m,3),dtype='uint8')
+            #self.img[self.foodPosition]=(255,0,0)
+            #self.img[self.agentPosition]=[255,0,0]
             #Tak długo jak jedzenie jest na graczu
-            print("Found food! ",self.img[self.foodPosition])
+            # print("Found food! ",self.img[self.foodPosition])
+
+            #print("EY")
+
+            self.foodPosition=tuple(np.random.randint(0,self.m,size=2))
+            
             while (self.img[self.foodPosition]==[255,0,0]).all():
+                #print("EY2")
                 self.foodPosition=tuple(np.random.randint(0,self.m,size=2))
 
-            self.img[self.foodPosition]=(0,255,0)
+            self.img[self.foodPosition]=[0,255,0]
             self.pointsToCollect-=1
             return True
         else:
             return False
-    # def addMagicSquares(self, magicSquares):
-    #     self.magicSquares = magicSquares
-    #     i = 2
-    #     for square in self.magicSquares:
-    #         x = square // self.m
-    #         y = square % self.n
-    #         self.grid[x][y] = i
-    #         i += 1
-    #         x = magicSquares[square] // self.m
-    #         y = magicSquares[square] % self.n
-    #         self.grid[x][y] = i
-    #         i += 1
-
-    # def getAgentRowAndColumn(self):
-    #     x = self.agentPosition // self.m
-    #     y = self.agentPosition % self.n
-    #     return x, y
-
-    # def setState(self, state):
-    #     x, y = self.getAgentRowAndColumn()
-    #     self.grid[x][y] = 0
-    #     self.agentPosition = state
-    #     x, y = self.getAgentRowAndColumn()
-    #     self.grid[x][y] = 1
-
-    # def offGridMove(self, newAgentPos, oldAgentPos):
-    #     #return False
-    #     # # if we move into a row not in the grid
-    #     if 0 > newAgentPos or newAgentPos >= self.n*self.m:#self.stateSpacePlus:
-    #         return True
-    #     #if we're trying to wrap around to next row
-    #     elif oldAgentPos % self.m == 0 and newAgentPos  % self.m == self.m - 1:
-    #         return True
-    #     elif oldAgentPos % self.m == self.m - 1 and newAgentPos % self.m == 0:
-    #         return True
-    #     else:
-    #         return False
 
 
     def collision_with_boundaries(self,newAgentPos):
@@ -122,22 +93,29 @@ class GridWorld(object):
 
 
     def step(self, action):
+        # if np.random.uniform(low=0.0, high=1.0) <= self.new_food_prob:
+        #     new_f=tuple(np.random.randint(0,self.m,size=2))
+        #     while new_f==[255,0,0]:
+        #         new_f=tuple(np.random.randint(0,self.m,size=2))
+        #     self.img[new_f]=(0,255,0)
+
+                
         done=False
         old_index=copy.deepcopy(self.agentPosition)
         self.change_agent_position(action)
 
-        reward = -1 if self.collision_with_boundaries(self.agentPosition) else 0
+        reward = -np.linalg.norm(np.array(self.agentPosition) - np.array(self.foodPosition)) #if self.collision_with_boundaries(self.agentPosition) else 0
         #if self.collision_with_boundaries(self.agentPosition)
 
-        if not self.collision_with_boundaries(self.agentPosition):
-            reward += 2000 if self.isFoodState() else 0   
-            reward += -1 if not self.isTerminalState() else 0
+        if self.collision_with_boundaries(self.agentPosition):
+            #reward += -1 if not self.isTerminalState() else 0
             #self.grid = np.zeros(self.observation_size)
             # self.img[old_index]=(0,0,0)
             # self.img[self.foodPosition]=(0,255,0)
-        else:
-            reward = -1
             self.agentPosition=copy.deepcopy(old_index)
+        
+        reward += 500 if self.isFoodState() else 0   
+            
 
         self.img[old_index]=(0,0,0)
         self.img[self.agentPosition]=(255,0,0)
@@ -149,6 +127,15 @@ class GridWorld(object):
         #Add strict time horizon
         if self.current_time>=self.time_cap:
             done=True
+
+        # Render while training
+        # if not self.game_already_initialized:
+        #     self.surface=initialize_game()
+        #     self.game_already_initialized = True  
+        # self.render(self.surface)
+
+
+
 
         return self.img, reward, \
                 done, {}
@@ -175,23 +162,7 @@ class GridWorld(object):
         draw_map(surface, self.img,self.m,self.m)
         draw_grid(surface,self.m,self.m) 
         pygame.display.flip()
-        time.sleep(0.5)
-        # for row in grid_2d:
-        #     for col in row:
-        #         if col == 0:
-        #             print('-', end='\t')
-        #         elif col == 1:
-        #             print('X', end='\t')
-        #         elif col == 2:
-        #             print('Ain', end='\t')
-        #         elif col == 3:
-        #             print('Aout', end='\t')
-        #         elif col == 4:
-        #             print('Bin', end='\t')
-        #         elif col == 5:
-        #             print('Bout', end='\t')
-        #     print('\n')
-        # print('------------------------------------------')
+        time.sleep(0.1)
 
 
     def actionSpaceSample(self):
