@@ -58,7 +58,7 @@ class Agent:
 
 
 class NeuralQLearningAgent(Agent):
-    def __init__(self, env, gamma, epsilon, lr, input_dims, batch_size, n_actions, max_mem_size=100000, eps_end=0.05, eps_dec=5e-3,
+    def __init__(self, env, gamma, epsilon, lr, input_dims, batch_size, n_actions, max_mem_size=100000, eps_end=0.1, eps_dec=5e-3,
                 update_every=20, useReplay_mem=True,useNetwork_freezing=True,useDouble_Qlearning=True, q_eval=None):
         super().__init__(env)
         self.gamma = gamma
@@ -80,14 +80,14 @@ class NeuralQLearningAgent(Agent):
         #Pierwsza sieć - 
         if q_eval==None:
             self.q_eval = DeepQNetwork(lr, n_actions=n_actions, input_dims=input_dims,
-                                        fc1_dims=256, fc2_dims=256)
+                                        fc1_dims=16, fc2_dims=16)
         else:
             self.q_eval = q_eval
         
         self.useDouble_Qlearning=useDouble_Qlearning
         if useDouble_Qlearning:
             self.q_next = DeepQNetwork(lr, n_actions=n_actions, input_dims=input_dims,
-                                    fc1_dims=256, fc2_dims=256)#.to(device)
+                                    fc1_dims=16, fc2_dims=16)#.to(device)
         else:
             self.q_next = self.q_eval
             
