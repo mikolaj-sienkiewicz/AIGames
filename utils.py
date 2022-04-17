@@ -51,8 +51,8 @@ def run_agent_in_env(env, agent, episodes, learning=False, plot=False, render=Fa
             total_reward += reward
             
             # Jeśli się uczymy, przekażmy przejście do agenta
-            if learning:
-                agent.process_transition(observation, action, reward, next_observation, done)
+            # if learning:
+            #     agent.process_transition(observation, action, reward, next_observation, done)
             
             observation = next_observation
         if render:

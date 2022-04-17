@@ -47,6 +47,24 @@ def game_loop(surface, world_map):
         draw_grid(surface)
         pygame.display.update()
 
+def draw_text(surface, text):
+    font = pygame.font.SysFont(None, 12)
+    img = font.render(text, True, constants.RED)
+    surface.blit(img,(5,5))
+
+def draw_agent(surface, agentPosition, num_blocks_w, num_blocks_h):
+    BLOCK_WIDTH=constants.SCREEN_WIDTH/num_blocks_w
+    BLOCK_HEIGHT=constants.SCREEN_HEIGHT/num_blocks_h
+    myrect = pygame.Rect((agentPosition[1]+1/3)*BLOCK_WIDTH, (agentPosition[0]+1/3)*BLOCK_HEIGHT, (BLOCK_WIDTH/3), (BLOCK_HEIGHT/3))
+    pygame.draw.rect(surface, (255,255,255), myrect)
+
+def draw_bases(surface, basesPosition, num_blocks_w, num_blocks_h):
+    BLOCK_WIDTH=constants.SCREEN_WIDTH/num_blocks_w
+    BLOCK_HEIGHT=constants.SCREEN_HEIGHT/num_blocks_h
+    for base in basesPosition:
+        myrect = pygame.Rect((base[1]+1/3)*BLOCK_WIDTH, (base[0]+1/3)*BLOCK_HEIGHT, (BLOCK_WIDTH/3), (BLOCK_HEIGHT/3))
+        pygame.draw.rect(surface, (0,0,0), myrect)
+
 def initialize_game():
     pygame.init()
     surface = pygame.display.set_mode((constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT))
