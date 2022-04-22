@@ -7,6 +7,7 @@ from render_controller import draw_map, draw_grid, draw_text, draw_agent, draw_b
 import time 
 import copy
 from render_controller import initialize_game
+from typing import List, Tuple
 
 class GridWorld(object):
     metadata = {'render.modes': ['human']}
@@ -15,7 +16,7 @@ class GridWorld(object):
     def __init__(self, m):
         super().__init__()
 
-
+        self.other_agents=[]
         self.grid_size = m
         self.game_already_initialized=False
         self.points_collected=0
@@ -63,6 +64,9 @@ class GridWorld(object):
 
         print(f"FOLLOWING BASES INITIALIZED: COLORS, {self.base_colors}  POSITIONS, {self.base_position}")
 
+    def update_other_agents(self, other_agents: List[Tuple[int,int]]):
+        self.other_agents=other_agents
+
     def manhattan(self, a, b):
         return sum(abs(val1-val2) for val1, val2 in zip(a,b))
 
@@ -98,10 +102,22 @@ class GridWorld(object):
                 return 1
         return 0
 
+    def collision_with_other_agent(self):
+        for agent in self.other_agents:
+            if self.agentPosition[:2]==agent:
+                return 1
+        return 0
+
     def collision_with_base(self):
         for e,base in enumerate(self.base_position):
             if self.agentPosition[:2]==base:
                 self.agentPosition = (self.agentPosition[0],self.agentPosition[1],e)
+                return 1
+        return 0
+    
+    def collision_with_same_color_base(self):
+        for e,base in enumerate(self.base_position):
+            if self.agentPosition[:2]==base and e==self.agentPosition[2]:
                 return 1
         return 0
 
@@ -125,7 +141,7 @@ class GridWorld(object):
         self.change_agent_position(action)
 
         # don't change coords if wall was hit but preserve color change if base was hit
-        if self.collision_with_boundaries() or self.collision_with_base() or self.collision_with_other_food():
+        if self.collision_with_boundaries() or self.collision_with_base() or self.collision_with_other_food() or self.collision_with_other_agent():
             self.agentPosition=tuple([*old_index[:2],self.agentPosition[2]])
         
         reward = 0
@@ -178,7 +194,7 @@ class GridWorld(object):
         self.food_list=[]
         for _ in range(self.max_food):
             x = tuple(np.random.randint(0,self.grid_size,size=2))
-            while x == self.agentPosition or x in self.base_position or x in [tuple(food[:2]) for food in self.food_list]:
+            while x == self.agentPosition[:2] or x in self.base_position or x in [tuple(food[:2]) for food in self.food_list]:
                 x=tuple(np.random.randint(0,self.grid_size,size=2))
             food_type=np.random.randint(0,self.num_bases)
             self.food_list.append(tuple([*x,food_type]))
@@ -216,6 +232,26 @@ class GridWorld(object):
         pygame.display.flip()
         time.sleep(0.1)
 
+    def sync(self, env):
+        self.num_bases=env.num_bases
+        self.base_position=env.base_position
+        self.base_colors=env.base_colors
+        self.time_cap=env.time_cap
+        self.current_time=env.current_time
+        self.new_food_prob=env.new_food_prob
+        self.max_food=env.max_food
+        self.food_counter=env.food_counter
+        self.other_agents=env.other_agents
+        self.points_collected=env.points_collected
+        self.reward_normalizer=env.reward_normalizer
+        self.food_list=env.food_list
+        self.POINTS_TO_COLLECT=env.POINTS_TO_COLLECT
+        self.pointsToCollect=self.POINTS_TO_COLLECT
+
+        while self.agentPosition[:2] in self.other_agents or self.agentPosition[:2] in self.base_position or self.agentPosition[:2] in [tuple(food[:2]) for food in self.food_list]:
+            self.agentPosition=(*np.random.randint(0,self.grid_size,size=2),self.agentPosition[2])
+
+        return self.patch_observation() #tuple(self.agentPosition[:2])
 
     def actionSpaceSample(self):
         return np.random.choice(self.possibleActions)
