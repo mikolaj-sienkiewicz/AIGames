@@ -1,3 +1,9 @@
+import sys,os 
+sys.path.append(os.path.join(sys.path[0], ".."))
+
+from environment.GridEnv import GridWorld
+from utils import run_agent_in_env
+
 class HeuristicAgent:
     def __init__(self, env):
         self.observation_space = env.observation_space
@@ -63,3 +69,10 @@ class HeuristicAgent:
                 else:
                     best_food=self.env.base_position[food[2]]
         return best_food
+
+if __name__=='__main__':
+    GRID_SIDE_LENGTH=12
+    env = GridWorld(GRID_SIDE_LENGTH)
+    env.reset()
+    agent = HeuristicAgent(env)
+    rewards = run_agent_in_env(env, agent, 5, learning=False, plot=False, render=True, plot_interval=20)

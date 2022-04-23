@@ -2,3 +2,4 @@ logs/
 model*
 .ipynb_checkpoints
 __pycache__/
+CMA

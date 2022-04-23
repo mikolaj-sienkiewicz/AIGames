@@ -1,40 +1,42 @@
-from sre_constants import SRE_FLAG_DEBUG
 import numpy as np
-import matplotlib.pyplot as plt
 from gym import spaces 
 import pygame
-from render_controller import draw_map, draw_grid, draw_text, draw_agent, draw_bases
+import os,sys
+
+sys.path.append(os.path.join(sys.path[0], ".."))
+
+from render_controller import RenderController
 import time 
 import copy
-from render_controller import initialize_game
 from typing import List, Tuple
+import constants
 
 class GridWorld(object):
     metadata = {'render.modes': ['human']}
-    POINTS_TO_COLLECT=100
+    POINTS_TO_COLLECT=10
 
-    def __init__(self, m):
+    def __init__(self, m, max_time=500, num_bases=2, num_food=3):
         super().__init__()
-
         self.other_agents=[]
         self.grid_size = m
         self.game_already_initialized=False
         self.points_collected=0
+        self.render_controller=None
 
-
-        self.num_bases=2
+        self.num_bases=num_bases
 
         #potential hazard - same location for two bases
         self.base_position=[tuple(np.random.randint(0,self.grid_size,size=2)) for _ in range(self.num_bases)]
-        self.base_colors={i:list(np.random.randint(100,250,3)) for i in range(self.num_bases)}
+        if self.num_bases==2:
+            self.base_colors={0:constants.DARKGREEN,1:constants.DARKORANGE}
+        else:
+            self.base_colors={i:list(np.random.randint(100,250,3)) for i in range(self.num_bases)}
 
 
-        self.time_cap=100
+        self.time_cap=max_time
         self.current_time=0
 
-        self.new_food_prob=0.03
-        self.max_food=3
-        self.food_counter=0
+        self.max_food=num_food
         self.food_type_prob={i:tuple([i/self.num_bases,(i+1)/self.num_bases]) for i in range(self.num_bases)}
 
         self.reward_normalizer=self.manhattan(tuple([self.grid_size,self.grid_size]),tuple([0,0]))*2*self.max_food
@@ -61,8 +63,6 @@ class GridWorld(object):
             self.food_list.append(tuple([*x,food_type]))
 
         self.pointsToCollect=self.POINTS_TO_COLLECT
-
-        #print(f"FOLLOWING BASES INITIALIZED: COLORS, {self.base_colors}  POSITIONS, {self.base_position}")
 
     def update_other_agents(self, other_agents: List[Tuple[int,int]]):
         self.other_agents=other_agents
@@ -148,11 +148,9 @@ class GridWorld(object):
 
         if self.collision_with_my_food():
             self.points_collected+=1
-            reward+=self.time_cap*self.grid_size# IN A2C TRAINING-self.time_cap/(self.POINTS_TO_COLLECT/2) # (2*self.grid_size)*self.grid_size*self.max_food*2  
-        
-        if self.agentPosition[2]==-1:
-            reward-=self.grid_size
- 
+            reward+=self.time_cap/(self.POINTS_TO_COLLECT/2) # (2*self.grid_size)*self.grid_size*self.max_food*2  
+
+        reward-=1
 
         self.img[tuple(old_index[:2])]=(0,0,0)
         if self.agentPosition[2]!=-1:
@@ -167,13 +165,6 @@ class GridWorld(object):
         if self.current_time>=self.time_cap or self.isTerminalState():
             done=True
 
-        # Render while training
-        # if not self.game_already_initialized:
-        #     self.surface=initialize_game()
-        #     self.game_already_initialized = True 
-        # self.render(self.surface)
-
-
         observation = self.patch_observation()
 
         return observation, reward, \
@@ -183,7 +174,6 @@ class GridWorld(object):
 
         self.points_collected=0
         
-        self.food_counter=0
         self.img = np.zeros((self.grid_size,self.grid_size,3),dtype='uint8')
 
         self.pointsToCollect = self.POINTS_TO_COLLECT
@@ -224,13 +214,15 @@ class GridWorld(object):
             obs+=([self.agentPosition[0]-food[0],self.agentPosition[1]-food[1],food[2]]) 
         return np.array(obs)
 
-    def render(self, surface):
-        draw_map(surface, self.img,self.grid_size,self.grid_size)
-        draw_agent(surface,self.agentPosition, self.grid_size,self.grid_size)
-        draw_bases(surface,self.base_position, self.grid_size,self.grid_size)
-        draw_grid(surface,self.grid_size,self.grid_size) 
-        draw_text(surface,f"POINTS COLLECTED: {self.points_collected}")
-        pygame.display.set_caption("Color cakes")
+    def render(self):
+        if not self.game_already_initialized:
+            self.render_controller=RenderController(self.grid_size,self.grid_size)
+            self.game_already_initialized=True
+        self.render_controller.draw_map(self.img)
+        self.render_controller.draw_agent(self.agentPosition)
+        self.render_controller.draw_bases(self.base_position, self.base_colors)
+        self.render_controller.draw_grid() 
+        self.render_controller.draw_text(f"POINTS COLLECTED: {self.points_collected}")
         pygame.display.flip()
         time.sleep(0.1)
 
@@ -240,9 +232,7 @@ class GridWorld(object):
         self.base_colors=env.base_colors
         self.time_cap=env.time_cap
         self.current_time=env.current_time
-        self.new_food_prob=env.new_food_prob
         self.max_food=env.max_food
-        self.food_counter=env.food_counter
         self.other_agents=env.other_agents
         self.points_collected=env.points_collected
         self.reward_normalizer=env.reward_normalizer
@@ -257,27 +247,6 @@ class GridWorld(object):
 
     def actionSpaceSample(self):
         return np.random.choice(self.possibleActions)
-
-
-    def pick_best_food(self):
-        agent_color = self.agentPosition[2]
-        agent_coords = tuple(self.agentPosition[:2])
-        best_distance=self.grid_size*10
-        best_food=None
-        for food in self.food_list:
-            current_dist=0
-            food_coords=tuple(food[:2])
-            food_color=food[2]
-            if food_color!=agent_color:
-                current_dist+=self.manhattan(self.base_position[food[2]],agent_coords)
-            current_dist+=self.manhattan(food_coords,agent_coords)
-            if current_dist<best_distance:
-                best_distance=current_dist
-                if food_color==agent_color:
-                    best_food=food_coords
-                else:
-                    best_food=self.base_position[food[2]]
-        return best_food
 
 def maxAction(Q, state, actions):
     values = np.array([Q[state,a] for a in actions])
