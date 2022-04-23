@@ -13,9 +13,9 @@ import constants
 
 class GridWorld(object):
     metadata = {'render.modes': ['human']}
-    POINTS_TO_COLLECT=10
+    POINTS_TO_COLLECT=1
 
-    def __init__(self, m, max_time=500, num_bases=2, num_food=3):
+    def __init__(self, m, max_time=50, num_bases=2, num_food=3):
         super().__init__()
         self.other_agents=[]
         self.grid_size = m
