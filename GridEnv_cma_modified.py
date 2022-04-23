@@ -8,11 +8,10 @@ import time
 import copy
 from render_controller import initialize_game
 from typing import List, Tuple
-import constants
 
 class GridWorld(object):
     metadata = {'render.modes': ['human']}
-    POINTS_TO_COLLECT=10
+    POINTS_TO_COLLECT=100
 
     def __init__(self, m):
         super().__init__()
@@ -27,13 +26,10 @@ class GridWorld(object):
 
         #potential hazard - same location for two bases
         self.base_position=[tuple(np.random.randint(0,self.grid_size,size=2)) for _ in range(self.num_bases)]
-        if self.num_bases==2:
-            self.base_colors={0:constants.DARKGREEN,1:constants.DARKORANGE}
-        else:
-            self.base_colors={i:list(np.random.randint(100,250,3)) for i in range(self.num_bases)}
+        self.base_colors={i:list(np.random.randint(100,250,3)) for i in range(self.num_bases)}
 
 
-        self.time_cap=500
+        self.time_cap=100
         self.current_time=0
 
         self.new_food_prob=0.03
@@ -152,9 +148,11 @@ class GridWorld(object):
 
         if self.collision_with_my_food():
             self.points_collected+=1
-            reward+=self.time_cap/(self.POINTS_TO_COLLECT/2) # (2*self.grid_size)*self.grid_size*self.max_food*2  
-
-        #reward-=1
+            reward+=self.time_cap*self.grid_size# IN A2C TRAINING-self.time_cap/(self.POINTS_TO_COLLECT/2) # (2*self.grid_size)*self.grid_size*self.max_food*2  
+        
+        if self.agentPosition[2]==-1:
+            reward-=self.grid_size
+ 
 
         self.img[tuple(old_index[:2])]=(0,0,0)
         if self.agentPosition[2]!=-1:
@@ -259,6 +257,27 @@ class GridWorld(object):
 
     def actionSpaceSample(self):
         return np.random.choice(self.possibleActions)
+
+
+    def pick_best_food(self):
+        agent_color = self.agentPosition[2]
+        agent_coords = tuple(self.agentPosition[:2])
+        best_distance=self.grid_size*10
+        best_food=None
+        for food in self.food_list:
+            current_dist=0
+            food_coords=tuple(food[:2])
+            food_color=food[2]
+            if food_color!=agent_color:
+                current_dist+=self.manhattan(self.base_position[food[2]],agent_coords)
+            current_dist+=self.manhattan(food_coords,agent_coords)
+            if current_dist<best_distance:
+                best_distance=current_dist
+                if food_color==agent_color:
+                    best_food=food_coords
+                else:
+                    best_food=self.base_position[food[2]]
+        return best_food
 
 def maxAction(Q, state, actions):
     values = np.array([Q[state,a] for a in actions])

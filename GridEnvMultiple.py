@@ -1,11 +1,12 @@
 from sre_constants import SRE_FLAG_DEBUG
+from CmaesAgent import CmaesAgent
 from HeuristicAgent import HeuristicAgent
 from ReinforcedAgent import ReinforcedAgent
 import numpy as np
 import matplotlib.pyplot as plt
 from gym import spaces 
 import pygame
-from render_controller import draw_map, draw_grid, draw_text, draw_agent, draw_bases_multiple_agents, draw_multiple_agents, draw_food_multiple_agents
+from render_controller import draw_map, draw_grid, draw_text_multiple_agents, draw_bases_multiple_agents, draw_multiple_agents, draw_food_multiple_agents
 import time 
 import copy
 from render_controller import initialize_game
@@ -34,7 +35,8 @@ class GridWorldMultiple(object):
             self.agents.append(HeuristicAgent(env))
         
         for agent in range(cmaesAgents):
-            pass
+            env=GridWorld(self.grid_size)
+            self.agents.append(CmaesAgent(env))
 
         for agent in self.agents:
             self.obs_array.append(agent.env.sync(self.main_env))
@@ -71,12 +73,12 @@ class GridWorldMultiple(object):
         draw_bases_multiple_agents(surface,self.main_env.base_position,self.main_env.base_colors, self.main_env.grid_size,self.main_env.grid_size)
         draw_food_multiple_agents(surface,self.main_env.food_list,self.main_env.base_colors,self.main_env.grid_size,self.main_env.grid_size)
         draw_grid(surface,self.main_env.grid_size,self.main_env.grid_size) 
-        draw_text(surface,f"POINTS COLLECTED: {self.main_env.points_collected}")
+        draw_text_multiple_agents(surface,self.main_env, self.agents)
         pygame.display.set_caption("Color cakes")
         pygame.display.flip()
         time.sleep(0.1)
 
 if __name__=='__main__':
-    simulator=GridWorldMultiple(12,reinforcedAgents=1,heuristicAgents=1)
+    simulator=GridWorldMultiple(12,cmaesAgents=1,reinforcedAgents=2,heuristicAgents=2)
     for i in range(200):
         simulator.step()

@@ -1,5 +1,6 @@
 import sys
 import os, sys
+from CmaesAgent import CmaesAgent
 from HeuristicAgent import HeuristicAgent
 from ReinforcedAgent import ReinforcedAgent
 import constants
@@ -41,6 +42,21 @@ def draw_text(surface, text):
     img = font.render(text, True, constants.RED)
     surface.blit(img,(5,5))
 
+def draw_text_multiple_agents(surface, main_env, agents):
+    font = pygame.font.SysFont(None, 24)
+    agent_color_dict={HeuristicAgent:constants.RED,ReinforcedAgent:constants.GREEN,CmaesAgent:constants.BLUE}
+    for e,agent in enumerate(agents):
+        # if isinstance(agent, HeuristicAgent):
+        #     color=constants.RED
+        # elif isinstance(agent, ReinforcedAgent):
+        #     color=constants.GREEN
+        # else:
+        #     color=constants.BLUE
+        color=agent_color_dict[type(agent)]
+        img = font.render(f"POINTS COLLECTED: {agent.env.points_collected}", True, color)
+        #agent.env.pointsCollected
+        surface.blit(img,(5,15*e))
+
 def draw_agent(surface, agentPosition, num_blocks_w, num_blocks_h):
     BLOCK_WIDTH=constants.SCREEN_WIDTH/num_blocks_w
     BLOCK_HEIGHT=constants.SCREEN_HEIGHT/num_blocks_h
@@ -77,18 +93,15 @@ def draw_multiple_agents(surface,agents, num_blocks_w,num_blocks_h):
     for agent in agents:
         agentPosition=agent.env.agentPosition
         base_colors=agent.env.base_colors
+        agent_color_dict={HeuristicAgent:constants.RED,ReinforcedAgent:constants.GREEN,CmaesAgent:constants.BLUE}
+
         myrect = pygame.Rect((agentPosition[1]+1/3)*BLOCK_WIDTH, (agentPosition[0]+1/3)*BLOCK_HEIGHT, (BLOCK_WIDTH/3), (BLOCK_HEIGHT/3))
         myrect_full = pygame.Rect((agentPosition[1])*BLOCK_WIDTH, (agentPosition[0])*BLOCK_HEIGHT, (BLOCK_WIDTH), (BLOCK_HEIGHT))
         if agentPosition[2]==-1:
-            pygame.draw.rect(surface, (100,100,100), myrect_full)
+            pygame.draw.rect(surface, constants.GREY, myrect_full)
         else:
             pygame.draw.rect(surface, base_colors[agentPosition[2]], myrect_full)
-        if isinstance(agent, HeuristicAgent):
-            pygame.draw.rect(surface, (255,0,0), myrect)
-        elif isinstance(agent, ReinforcedAgent):
-            pygame.draw.rect(surface, (0,255,0), myrect)
-        else:
-            pygame.draw.rect(surface, (0,0,255), myrect)
+        pygame.draw.rect(surface, agent_color_dict[type(agent)], myrect)
 
 def initialize_game():
     pygame.init()
