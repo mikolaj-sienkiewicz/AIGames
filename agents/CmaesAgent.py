@@ -9,7 +9,7 @@ from utils import run_agent_in_env
 
 
 class CmaesAgent:
-    def __init__(self, env, model_path="../saved_models/evolution/weights.npy"):
+    def __init__(self, env, model_path="/home/mikolaj/Desktop/Sem10/AI_in_games/AIGames/saved_models/evolution/weights.npy"):
         self.env=env
         self.observation_space = env.observation_space
         self.action_space = env.action_space

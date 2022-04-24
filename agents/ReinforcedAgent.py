@@ -7,7 +7,7 @@ from environment.GridEnv import GridWorld
 from utils import run_agent_in_env
 
 class ReinforcedAgent:
-    def __init__(self, env, model_path="../saved_models/reinforcement/12gr_3f_2b_2_9200000"):
+    def __init__(self, env, model_path="/home/mikolaj/Desktop/Sem10/AI_in_games/AIGames/saved_models/reinforcement/12gr_3f_2b_2_9200000"):
         self.env=env
         self.observation_space = env.observation_space
         self.action_space = env.action_space
