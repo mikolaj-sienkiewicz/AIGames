@@ -150,7 +150,9 @@ class GridWorld(object):
             self.points_collected+=1
             reward+=self.time_cap/(self.POINTS_TO_COLLECT/2) # (2*self.grid_size)*self.grid_size*self.max_food*2  
 
-        reward-=1
+        reward -= 1 #w treningu A2C
+        # W treningu CMAES
+        # reward-=self.manhattan(tuple(self.agentPosition[:2]),self.pick_best_food())/self.manhattan((0,0),(self.grid_size,self.grid_size))
 
         self.img[tuple(old_index[:2])]=(0,0,0)
         if self.agentPosition[2]!=-1:
@@ -247,6 +249,26 @@ class GridWorld(object):
 
     def actionSpaceSample(self):
         return np.random.choice(self.possibleActions)
+
+    def pick_best_food(self):
+        agent_color = self.agentPosition[2]
+        agent_coords = tuple(self.agentPosition[:2])
+        best_distance=self.grid_size*10
+        best_food=None
+        for food in self.food_list:
+            current_dist=0
+            food_coords=tuple(food[:2])
+            food_color=food[2]
+            if food_color!=agent_color:
+                current_dist+=self.manhattan(self.base_position[food[2]],agent_coords)
+            current_dist+=self.manhattan(food_coords,agent_coords)
+            if current_dist<best_distance:
+                best_distance=current_dist
+                if food_color==agent_color:
+                    best_food=food_coords
+                else:
+                    best_food=self.base_position[food[2]]
+        return best_food
 
 def maxAction(Q, state, actions):
     values = np.array([Q[state,a] for a in actions])
